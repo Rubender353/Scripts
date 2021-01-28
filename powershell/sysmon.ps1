@@ -30,12 +30,8 @@ $SYSMONDIR="C:\windows\sysmon"
 $SYSMONBIN="$SYSMONDIR\$BINARCH"
 $SYSMONCONFIG="$SYSMONDIR\SysmonConfig.xml"
 
-$GLBSYSMONBIN="\\$DC\sysvol\$FQDN\Sysmon\$BINARCH"
-$GLBSYSMONCONFIG="\\$DC\sysvol\$FQDN\Sysmon\sysmonConfig.xml"
-
-# checks sysmon service, if stopped goes to startsysmon
-If ((get-service $SERVBINARCH).Status -eq "stopped") 
-    {startsysmon}
+$GLBSYSMONBIN="\\$DC\sysvol\scripts\$FQDN\Sysmon\$BINARCH"
+$GLBSYSMONCONFIG="\\$DC\sysvol\scripts\$FQDN\Sysmon\sysmonConfig.xml"
   
 function installsysmon {
     if (!(test-path $SYSMONDIR)) {
@@ -43,22 +39,24 @@ function installsysmon {
     Copy-Item -path $GLBSYSMONBIN -destination $SYSMONDIR -Recurse
     Copy-Item -path $GLBSYSMONCONFIG -destination $SYSMONDIR -Recurse
     cd $SYSMONDIR
-    $SYSMONBIN -i $SYSMONCONFIG -accepteula -h md5,sha256 -n -l
+    & $SYSMONBIN -i $SYSMONCONFIG -accepteula -h md5,sha256 -n -l
     Set-Service $SERVBINARCH -StartupType Automatic
 }
 #upates config of sysmon
 function updateconfig{
     Copy-Item -path $GLBSYSMONCONFIG -destination $SYSMONCONFIG -recurse
     cd $SYSMONDIR
-    $SYSMONBIN -c $SYSMONCONFIG
+    & $SYSMONBIN -c $SYSMONCONFIG
     Exit $LASTEXITCODE
 }
 # If service not found on start runs installsysmon func. Else it compares sysmonconfig hashes if different it does an update just updates config  
 function startsysmon {
-    start-service %SERVBINARCH%
+    start-service $SERVBINARCH
     If (($error[0]).categoryinfo.category -eq "ObjectNotFound" ) {
         installsysmon} 
     elseif ((Get-FileHash -algorithm sha256 -Path $GLBSYSMONCONFIG).hash -ne (Get-FileHash -algorithm sha256 -Path $SYSMONCONFIG).hash) {
         updateconfig}
 }
 
+# runs startsysmon function
+startsysmon
