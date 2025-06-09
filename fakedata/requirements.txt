@@ -1,0 +1,4 @@
+Faker
+openpyxl
+python-docx
+reportlab
