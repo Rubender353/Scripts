@@ -1,3 +1,4 @@
+#Info: This creates fake corporate data with random information. Note the data itself won't be as realistic
 import os
 import random
 import string
